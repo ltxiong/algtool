@@ -1,0 +1,26 @@
+{
+    "name": "ltxiong/algtool",
+    "description": "自定义算法工具类或改造的算法类",
+    "license": "none",
+    "keywords": [
+        "php",
+        "rsyslog",
+        "log",
+        "雪花算法",
+        "snowflake"
+    ],
+    "authors": [
+        {
+            "name": "ltxiong",
+            "email": "ltx851201@yeah.net"
+        }
+    ],
+    "require": {
+        "php": ">=5.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ltxiong\\AlgTool\\": "./src/"
+        }
+    }
+}
