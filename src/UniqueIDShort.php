@@ -1,32 +1,33 @@
 <?php
 namespace Ltxiong\AlgTool;
 
-
 /**
- * @desc 基于雪花算法进行改造的变种
+ * @desc 基于雪花算法进行改造的全局唯一ID变种算法(支持JavaScript支持的最大整型的53位)
+ * 可以参考 https://www.liaoxuefeng.com/article/1280526512029729，将机器位和单位时间粒度调大一些
  * @example
  * 
- * use Ltxiong\AlgTool\GUniqueID;
- * $work = new GUniqueID(2, 100);
+ * use Ltxiong\AlgTool\UniqueIDShort;
+ * $work = new UniqueIDShort(2, 30);
  * for($i = 0; $i < 100; $i++) {
  *     $id = $work->getNextUniqueID();
- *     echo $id . "    ";
+ *     echo $id . "    " . PHP_EOL;
  * }
  * 
  */
 
-class GUniqueID
+class UniqueIDShort
 {
     /**
-     * 64位的整数，用于设置时间戳基数(毫秒), 此值越大, 生成的ID越小
-     * 固定一个小于当前时间的毫秒数 2020/04/29 0:0:0
+     * 总计53位，其中，32位的秒数，5位机器占位符，2位IDC数据中心标识，14位秒内自增数
+     * 此值越大, 生成的ID越小
+     * 固定一个小于当前时间的毫秒数 2020/12/01 00:00:00
      */
-    const T_WEPOCH =  1588089600000;
+    const T_WEPOCH =  1606752000;
 
     /**
-     * 机器标识占的位数  同一个数据中心(IDC)最多可部256台
+     * 机器标识占的位数  同一个数据中心(IDC)最多可部32台
      */
-    const WORKER_ID_BITS = 8;
+    const WORKER_ID_BITS = 5;
 
     /**
      * 数据中心标识占的位数(一般的公司IDC数量不会太多，绝大部分公司IDC也就1~2个，
@@ -35,12 +36,12 @@ class GUniqueID
     const IDC_ID_BITS = 2;
  
     /**
-     * 毫秒内自增数点的位数，同一毫秒内最多可产生 4096个不重复的号
+     * 秒内自增数点的位数，同一秒内最多可产生 16384个不重复的号
      */
-    const SEQUENCE_BITS = 12;
+    const SEQUENCE_BITS = 14;
 
     /**
-     * 机器标识id，取值范围0~255
+     * 机器标识id，取值范围0~31
      *
      * @var integer
      */
@@ -54,17 +55,17 @@ class GUniqueID
     protected $idc_id = 0;
 
     /**
-     * 上一次获取数据的毫秒数
+     * 上一次获取数据的秒数
      */
     static $last_timestamp = -1;
 
     /**
-     * 当前毫秒内计数间隔
+     * 当前秒内计数间隔
      */
     static $sequence = 0;
 
     /**
-     * 同一毫秒内最多可产生的数量最大ID
+     * 同一秒内最多可产生的数量最大ID
      */
     static $sequence_mask = 0;
 
@@ -123,15 +124,14 @@ class GUniqueID
         self::$worker_id_shift = self::SEQUENCE_BITS;
     }
 
-
     /**
-     * 根据当前时间戳(毫秒) 生成全局唯一ID
+     * 根据当前时间戳(秒) 生成全局唯一ID
      *
      * @return int $nextId
     */
     public function getNextUniqueID()
     {
-        //取当前时间毫秒
+        //取当前时间秒
         $timestamp = $this->timeGen();
         $last_timestamp = self::$last_timestamp;
         //判断时钟是否正常
@@ -145,7 +145,7 @@ class GUniqueID
             self::$sequence = (self::$sequence + 1) & self::$sequence_mask;
             if (self::$sequence == 0) 
             {
-                $timestamp = $this->tilNextMillis($last_timestamp);
+                $timestamp = $this->tilNextSec($last_timestamp);
             }
         } 
         else 
@@ -159,23 +159,23 @@ class GUniqueID
     }
     
     /**
-     * 取当前时间毫秒
+     * 取当前时间秒
      *
      * @return float $timestramp
     */
     protected function timeGen()
     {
-        $timestramp = (float)sprintf("%.0f", microtime(true) * 1000);
+        // $timestramp = (float)sprintf("%.0f", microtime(true) * 1000);
+        $timestramp = time();
         return  $timestramp;
     }
 
-
     /**
-     * 取下一毫秒
+     * 取下一秒
      *
      * @return float $timestramp
     */
-    protected function tilNextMillis($last_timestamp)
+    protected function tilNextSec($last_timestamp)
     {
         $timestamp = $this->timeGen();
         while ($timestamp <= $last_timestamp) 
